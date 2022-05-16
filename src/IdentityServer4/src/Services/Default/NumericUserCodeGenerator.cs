@@ -48,19 +48,16 @@ namespace IdentityServer4.Services
 
             var uint32Buffer = new byte[8];
 
-            using (var rng = new RNGCryptoServiceProvider())
+            while (true)
             {
-                while (true)
-                {
-                    rng.GetBytes(uint32Buffer);
-                    var rand = BitConverter.ToUInt32(uint32Buffer, 0);
+                uint32Buffer = RandomNumberGenerator.GetBytes(uint32Buffer.Length);
+                var rand = BitConverter.ToUInt32(uint32Buffer, 0);
 
-                    const long max = 1 + (long)uint.MaxValue;
-                    var remainder = max % diff;
-                    if (rand < max - remainder)
-                    {
-                        return (int)(minValue + rand % diff);
-                    }
+                const long max = 1 + (long) uint.MaxValue;
+                var remainder = max % diff;
+                if (rand < max - remainder)
+                {
+                    return (int) (minValue + rand % diff);
                 }
             }
         }
