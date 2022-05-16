@@ -2,12 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using IdentityModel;
 using IdentityModel.Client;
@@ -16,6 +10,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace IdentityServer.IntegrationTests.Clients
@@ -172,10 +172,10 @@ namespace IdentityServer.IntegrationTests.Clients
             });
 
             response.IsError.Should().BeFalse();
-            
+
             var payload = GetPayload(response);
 
-            var scopes = ((JArray)payload["scope"]).Select(x => x.ToString()).ToArray();
+            var scopes = ((JArray) payload["scope"]).Select(x => x.ToString()).ToArray();
             scopes.Length.Should().Be(5);
             scopes.Should().Contain("openid");
             scopes.Should().Contain("email");
@@ -183,7 +183,7 @@ namespace IdentityServer.IntegrationTests.Clients
             scopes.Should().Contain("api4.with.roles");
             scopes.Should().Contain("roles");
 
-            var roles = ((JArray)payload["role"]).Select(x => x.ToString()).ToArray();
+            var roles = ((JArray) payload["role"]).Select(x => x.ToString()).ToArray();
             roles.Length.Should().Be(2);
             roles.Should().Contain("Geek");
             roles.Should().Contain("Developer");
@@ -194,7 +194,7 @@ namespace IdentityServer.IntegrationTests.Clients
                 Token = response.AccessToken
             });
 
-            roles = ((JArray)userInfo.Json["role"]).Select(x => x.ToString()).ToArray();
+            roles = userInfo.Json.GetProperty("role").EnumerateArray().Select(x => x.ToString()).ToArray();//["role"]).Select(x => x.ToString()).ToArray();
             roles.Length.Should().Be(2);
             roles.Should().Contain("Geek");
             roles.Should().Contain("Developer");

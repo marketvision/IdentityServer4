@@ -3,43 +3,62 @@
 
 
 using IdentityModel;
-using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 #pragma warning disable 1591
 
 namespace IdentityServer4.Stores.Serialization
 {
-    public class ClaimsPrincipalConverter : JsonConverter
+    public class ClaimsPrincipalConverter : JsonConverter<ClaimsPrincipal>
     {
-        public override bool CanConvert(Type objectType)
+        public override ClaimsPrincipal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return typeof(ClaimsPrincipal) == objectType;
+            var source = JsonSerializer.Deserialize<ClaimsPrincipalLite>(ref reader, options);
+            return source?.ToClaimsPrincipal();
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, ClaimsPrincipal value, JsonSerializerOptions options)
         {
-            var source = serializer.Deserialize<ClaimsPrincipalLite>(reader);
-            if (source == null) return null;
+            var target = value.ToClaimsPrincipalLite();
+            JsonSerializer.Serialize(writer, target, options);
+        }
+    }
 
-            var claims = source.Claims.Select(x => new Claim(x.Type, x.Value, x.ValueType));
-            var id = new ClaimsIdentity(claims, source.AuthenticationType, JwtClaimTypes.Name, JwtClaimTypes.Role);
-            var target = new ClaimsPrincipal(id);
-            return target;
+    public static class ClaimsPrincipalLiteExtensions
+    {
+        /// <summary>
+        /// Converts a ClaimsPrincipalLite to ClaimsPrincipal
+        /// </summary>
+        public static ClaimsPrincipal ToClaimsPrincipal(this ClaimsPrincipalLite principal)
+        {
+            var claims = principal.Claims.Select(x => new Claim(x.Type, x.Value, x.ValueType ?? ClaimValueTypes.String)).ToArray();
+            var id = new ClaimsIdentity(claims, principal.AuthenticationType, JwtClaimTypes.Name, JwtClaimTypes.Role);
+
+            return new ClaimsPrincipal(id);
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        /// <summary>
+        /// Converts a ClaimsPrincipal to ClaimsPrincipalLite
+        /// </summary>
+        public static ClaimsPrincipalLite ToClaimsPrincipalLite(this ClaimsPrincipal principal)
         {
-            var source = (ClaimsPrincipal)value;
+            var claims = principal.Claims.Select(
+                    x => new ClaimLite
+                    {
+                        Type = x.Type,
+                        Value = x.Value,
+                        ValueType = x.ValueType == ClaimValueTypes.String ? null : x.ValueType
+                    }).ToArray();
 
-            var target = new ClaimsPrincipalLite
+            return new ClaimsPrincipalLite
             {
-                AuthenticationType = source.Identity.AuthenticationType,
-                Claims = source.Claims.Select(x => new ClaimLite { Type = x.Type, Value = x.Value, ValueType = x.ValueType }).ToArray()
+                AuthenticationType = principal.Identity!.AuthenticationType!,
+                Claims = claims
             };
-            serializer.Serialize(writer, target);
         }
     }
 }

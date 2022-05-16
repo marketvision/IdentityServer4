@@ -7,7 +7,6 @@ using IdentityServer4.Configuration;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
@@ -30,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IIdentityServerBuilder AddSigningCredential(this IIdentityServerBuilder builder, SigningCredentials credential)
         {
             if (!(credential.Key is AsymmetricSecurityKey
-                || credential.Key is IdentityModel.Tokens.JsonWebKey && ((IdentityModel.Tokens.JsonWebKey)credential.Key).HasPrivateKey))
+                || credential.Key is IdentityModel.Tokens.JsonWebKey && ((IdentityModel.Tokens.JsonWebKey) credential.Key).HasPrivateKey))
             {
                 throw new InvalidOperationException("Signing key is not asymmetric");
             }
@@ -185,7 +184,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 if (persistKey)
                 {
-                    File.WriteAllText(filename, JsonConvert.SerializeObject(jwk));
+                    File.WriteAllText(filename, System.Text.Json.JsonSerializer.Serialize(jwk));
                 }
 
                 return builder.AddSigningCredential(key, signingAlgorithm);
@@ -265,7 +264,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // add signing algorithm name to key ID to allow using the same key for two different algorithms (e.g. RS256 and PS56);
             var key = new X509SecurityKey(certificate);
             key.KeyId += signingAlgorithm;
-            
+
             var keyInfo = new SecurityKeyInfo
             {
                 Key = key,

@@ -2,14 +2,16 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
 using FluentAssertions;
 using IdentityModel.Client;
 using IdentityServer.IntegrationTests.Clients.Setup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace IdentityServer.IntegrationTests.Clients
@@ -45,7 +47,7 @@ namespace IdentityServer.IntegrationTests.Clients
             });
 
             var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
+            fields["custom"].GetString().Should().Be("custom");
         }
 
         [Fact]
@@ -64,7 +66,7 @@ namespace IdentityServer.IntegrationTests.Clients
             });
 
             var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
+            fields["custom"].GetString().Should().Be("custom");
         }
 
         [Fact]
@@ -92,7 +94,7 @@ namespace IdentityServer.IntegrationTests.Clients
             });
 
             var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
+            fields["custom"].GetString().Should().Be("custom");
         }
 
         [Fact]
@@ -114,12 +116,35 @@ namespace IdentityServer.IntegrationTests.Clients
             });
 
             var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
+            fields["custom"].GetString().Should().Be("custom");
         }
 
-        private Dictionary<string, object> GetFields(TokenResponse response)
+        private Dictionary<string, JsonElement> GetFields(TokenResponse response)
         {
-            return response.Json.ToObject<Dictionary<string, object>>();
+            return response.Json.ToObject<Dictionary<string, JsonElement>>();
+        }
+    }
+}
+
+namespace IdentityServer.IntegrationTests
+{
+    public static class JsonElementExtensions
+    {
+        public static T ToObject<T>(this JsonElement element)
+        {
+            var json = element.GetRawText();
+            return JsonSerializer.Deserialize<T>(json);
+        }
+
+        public static T ToObject<T>(this JsonDocument document)
+        {
+            var json = document.RootElement.GetRawText();
+            return JsonSerializer.Deserialize<T>(json);
+        }
+
+        public static List<string> ToStringList(this JsonElement element)
+        {
+            return element.EnumerateArray().Select(item => item.GetString()).ToList();
         }
     }
 }
